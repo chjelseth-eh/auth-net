@@ -15,14 +15,14 @@ jobs:
             fail-fast: false
             matrix:
                 operating-system: [ubuntu-latest, macos-latest, windows-latest]
-                pyth-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+                pyth-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
                 include:
                   - operating-system: ubuntu-20.04   # Checking support for ubuntu os with python 3.6
-                    pyth-version: '3.6'
+                    pyth-version: '3.13'
                   - operating-system: macos-13   # Checking support for mac os with python 3.6
-                    pyth-version: '3.6'
+                    pyth-version: '3.13'
                   - operating-system: macos-13   # Checking support for mac os with python 3.7
-                    pyth-version: '3.7'
+                    pyth-version: '3.13'
                 exclude:
                   - operating-system: ubuntu-latest  #arm 64 doesn't support python ver 3.7
                     pyth-version: '3.6'
@@ -77,3 +77,16 @@ jobs:
 
                 cd ../$sample_code_python
                 python ./test-runner.py
+    pypi-publish:
+      name: upload release to PyPI
+      runs-on: ubuntu-latest
+      # Specifying a GitHub environment is optional, but strongly encouraged
+      environment: pypi
+      permissions:
+        # IMPORTANT: this permission is mandatory for Trusted Publishing
+        id-token: write
+      steps:
+        # retrieve your distributions here
+
+        - name: Publish package distributions to PyPI
+          uses: pypa/gh-action-pypi-publish@release/v1
