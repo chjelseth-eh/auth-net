@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eh-authnet"
+version = "2026.6.8"
+dependencies = [
+  "PyXB-X",
+  "lxml==6.*",
+  "requests==2.*",
+]
+requires-python = ">=3.8"
+authors = [
+
+]
+maintainers = [
+  {name = "EnH"}
+]
+description = "Authorize.Net Python SDK updated to use newer Python Versions"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+keywords = ["authorizenet", "authorize.net", "payment", "ecommerce"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+
+
+[project.urls]
+Repository = "https://github.com/AuthorizeNet/sdk-python"
