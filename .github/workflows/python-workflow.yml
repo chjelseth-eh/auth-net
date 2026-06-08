@@ -1,92 +1,70 @@
-name: Authorize.net Python CI
+# This workflow will upload a Python Package to PyPI when a release is created
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Upload Python Package
+
 on:
-    push:
-    pull_request:
-    workflow_dispatch:
-env:
-    sdk_python: 'sdk-python'
-    sample_code_python: 'sample-code-python'
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
 jobs:
-    workflow-job:
-        defaults:
-            run:
-                shell: bash
-        strategy:
-            fail-fast: false
-            matrix:
-                operating-system: [ubuntu-latest, macos-latest, windows-latest]
-                pyth-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-                include:
-                  - operating-system: ubuntu-20.04   # Checking support for ubuntu os with python 3.6
-                    pyth-version: '3.13'
-                  - operating-system: macos-13   # Checking support for mac os with python 3.6
-                    pyth-version: '3.13'
-                  - operating-system: macos-13   # Checking support for mac os with python 3.7
-                    pyth-version: '3.13'
-                exclude:
-                  - operating-system: ubuntu-latest  #arm 64 doesn't support python ver 3.7
-                    pyth-version: '3.6'
-                  - operating-system: macos-latest  #arm 64 doesn't support python ver 3.6
-                    pyth-version: '3.6'
-                  - operating-system: macos-latest  #arm 64 doesn't support python ver 3.7
-                    pyth-version: '3.7'
-        runs-on: ${{matrix.operating-system}}
-        steps:
-            - name: Creating separate folders for SDK and Sample Codes
-              run: |
-                rm -rf $sdk_python
-                rm -rf $sample_code_python
-                mkdir $sdk_python $sample_code_python
+  release-build:
+    runs-on: ubuntu-latest
 
-            - name: Checkout authorizenet/sdk-python
-              uses: actions/checkout@v4
-              with:
-                  path: ${{env.sdk_python}}
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Checkout authorizenet/sample-code-python
-              uses: actions/checkout@v4
-              with:
-                repository: 'authorizenet/sample-code-python'
-                ref: 'master'
-                path: ${{env.sample_code_python}}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
 
-            - name: Install Python
-              uses: actions/setup-python@v5
-              with:
-                python-version: ${{matrix.pyth-version}}
+      - name: Build release distributions
+        run: |
+          # NOTE: put your own distribution build steps here.
+          python -m pip install build
+          python -m build
 
-            - name: Install and Test
-              run: |
-                python -V
-                python -m pip install --upgrade pip
-                python -m venv virtual_env
-                if [[ "$(uname -s)" == "Linux" ]]; then
-                    echo "OS: Linux"
-                    source virtual_env/bin/activate
-                elif [[ "$(uname -s)" == "Darwin" ]]; then
-                    echo "OS: MacOS"
-                    source virtual_env/bin/activate
-                else
-                    echo "OS: Windows"
-                    source virtual_env/Scripts/activate
-                fi
-                echo $VIRTUAL_ENV
-                
-                cd $sdk_python
-                pip install -e .
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dists
+          path: dist/
 
-                cd ../$sample_code_python
-                python ./test-runner.py
-    pypi-publish:
-      name: upload release to PyPI
-      runs-on: ubuntu-latest
-      # Specifying a GitHub environment is optional, but strongly encouraged
-      environment: pypi
-      permissions:
-        # IMPORTANT: this permission is mandatory for Trusted Publishing
-        id-token: write
-      steps:
-        # retrieve your distributions here
+  pypi-publish:
+    runs-on: ubuntu-latest
+    needs:
+      - release-build
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
 
-        - name: Publish package distributions to PyPI
-          uses: pypa/gh-action-pypi-publish@release/v1
+    # Dedicated environments with protections for publishing are strongly recommended.
+    # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
+    environment:
+      name: pypi
+      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
+      # url: https://pypi.org/p/YOURPROJECT
+      #
+      # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
+      # ALTERNATIVE: exactly, uncomment the following line instead:
+      # url: https://pypi.org/project/YOURPROJECT/${{ github.event.release.name }}
+
+    steps:
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dists
+          path: dist/
+
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
